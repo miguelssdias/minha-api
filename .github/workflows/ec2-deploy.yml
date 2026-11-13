@@ -42,9 +42,12 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             docker pull ${{ env.IMAGE_NAME }}:latest
-            docker stop api-homol || true
-            docker rm api-homol || true
+            # Limpa qualquer container anterior ou conflito na porta 8080
+            docker stop api-homol api-prod 2>/dev/null || true
+            docker rm api-homol api-prod 2>/dev/null || true
+            docker stop $(docker ps -q --filter "publish=8080") 2>/dev/null || true
             docker container prune -f || true
+            # Sobe o container de homologação
             docker run -d --name api-homol -p 8080:8080 ${{ env.IMAGE_NAME }}:latest
 
   deploy-producao:
@@ -61,7 +64,10 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             docker pull ${{ env.IMAGE_NAME }}:latest
-            docker stop api-prod || true
-            docker rm api-prod || true
+            # Limpa qualquer container anterior ou conflito na porta 8080
+            docker stop api-homol api-prod 2>/dev/null || true
+            docker rm api-homol api-prod 2>/dev/null || true
+            docker stop $(docker ps -q --filter "publish=8080") 2>/dev/null || true
             docker container prune -f || true
+            # Sobe o container de produção
             docker run -d --name api-prod -p 8080:8080 ${{ env.IMAGE_NAME }}:latest
